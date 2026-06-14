@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock-Panic Tracker · 界面预览</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #06070b;
+    color: #e2e8f0;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 32px 16px 60px;
+  }
+  .page-head { text-align: center; margin-bottom: 8px; }
+  .page-head h1 { font-size: 24px; font-weight: 700; }
+  .page-head p { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 6px; }
+  .real-badge {
+    display:inline-block; font-size:11px; background:rgba(72,187,120,.18);
+    color:#68d391; border:1px solid rgba(72,187,120,.4); border-radius:99px;
+    padding:3px 12px; margin-top:10px;
+  }
+  .phones {
+    display: flex; gap: 24px; overflow-x: auto; padding: 28px 8px 12px;
+    scroll-snap-type: x mandatory; justify-content: flex-start;
+  }
+  .col { flex: 0 0 auto; scroll-snap-align: center; }
+  .col-label { text-align:center; font-size:12px; color:rgba(255,255,255,.4); margin-bottom:10px; letter-spacing:.05em; }
+
+  /* phone frame */
+  .phone {
+    width: 300px; height: 620px;
+    background: #0f1117;
+    border-radius: 38px;
+    border: 9px solid #1c1f2a;
+    box-shadow: 0 18px 50px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.04);
+    overflow: hidden; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:130px; height:26px; background:#1c1f2a; border-radius:0 0 16px 16px; z-index:5; }
+  .statusbar { display:flex; justify-content:space-between; padding:12px 22px 4px; font-size:11px; color:rgba(255,255,255,.5); }
+  .navbar { text-align:center; font-size:15px; font-weight:600; padding:4px 0 10px; }
+  .screen { flex:1; overflow-y:auto; padding: 4px 14px 14px; }
+  .screen::-webkit-scrollbar { width:0; }
+
+  /* tabbar */
+  .tabbar { display:flex; border-top:1px solid rgba(255,255,255,.07); background:#0f1117; padding:7px 0 9px; }
+  .tab { flex:1; text-align:center; font-size:9px; color:#5a6072; }
+  .tab .ic { font-size:18px; display:block; margin-bottom:2px; filter:grayscale(1) opacity(.6); }
+  .tab.on { color:#63b3ed; }
+  .tab.on .ic { filter:none; }
+
+  /* shared cards */
+  .card { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .label { font-size:10px; letter-spacing:1.5px; color:rgba(255,255,255,.4); text-transform:uppercase; }
+  .up { color:#fc5454; } .down { color:#2dd47f; } .muted{color:rgba(255,255,255,.4);}
+  .panic { color:#fc8149; } .gold{color:#f6e05e;}
+
+  /* home gauge */
+  .gauge { background:linear-gradient(135deg,rgba(252,129,74,.18),rgba(252,129,74,.04)); border:1px solid rgba(252,129,74,.3); border-radius:18px; padding:22px 16px; text-align:center; margin-bottom:12px; }
+  .gauge .num { font-size:64px; font-weight:800; color:#fc8149; line-height:1; }
+  .gauge .lvl { font-size:13px; color:#fc8149; margin-top:4px; }
+  .ring { width:6px; height:6px; }
+  .twogauge { display:flex; gap:10px; margin-bottom:12px; }
+  .mini { flex:1; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px; text-align:center; }
+  .mini .v { font-size:22px; font-weight:700; }
+  .comp { display:flex; justify-content:space-between; padding:8px 0; font-size:13px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .comp:last-child{border:none;}
+  .bar { height:5px; background:rgba(255,255,255,.08); border-radius:3px; margin-top:10px; overflow:hidden; }
+  .bar > i { display:block; height:100%; width:25%; background:linear-gradient(90deg,#68d391,#f6e05e,#fc8149); }
+  .briefing { background:linear-gradient(135deg,rgba(159,122,234,.14),rgba(99,179,237,.08)); border:1px solid rgba(159,122,234,.3); border-radius:16px; padding:14px; }
+  .briefing .t { font-size:13px; line-height:1.6; margin-top:8px; }
+
+  /* markets rows */
+  .qrow { display:flex; justify-content:space-between; align-items:center; padding:13px 4px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .qsym { font-size:15px; font-weight:600; }
+  .qsub { font-size:10px; color:rgba(255,255,255,.35); margin-top:2px; }
+  .qright { text-align:right; }
+  .qprice { font-size:14px; }
+  .qpct { font-size:12px; margin-top:2px; }
+
+  /* discover */
+  .tweet { background:rgba(29,161,242,.08); border:1px solid rgba(29,161,242,.25); border-radius:16px; padding:14px; margin-bottom:12px; }
+  .tweet .h { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .tweet .av { width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1da1f2,#0077b5);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .tweet .nm { font-size:13px; font-weight:600; }
+  .tweet .tx { font-size:13px; line-height:1.5; }
+  .tweet .imp { margin-top:10px; font-size:11px; color:#fc8149; background:rgba(252,129,74,.1); border-radius:8px; padding:7px 10px; }
+  .news { padding:11px 4px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .news .t { font-size:13px; line-height:1.45; }
+  .news .s { font-size:10px; color:rgba(255,255,255,.35); margin-top:3px; }
+
+  /* ai chat */
+  .msg { max-width:80%; padding:11px 14px; border-radius:14px; font-size:13px; line-height:1.5; margin-bottom:12px; }
+  .msg.u { background:rgba(99,179,237,.2); margin-left:auto; }
+  .msg.a { background:rgba(255,255,255,.06); }
+  .inputbar { display:flex; gap:8px; margin-top:8px; }
+  .inputbar .in { flex:1; background:rgba(255,255,255,.06); border-radius:99px; padding:11px 16px; font-size:12px; color:rgba(255,255,255,.4); }
+  .inputbar .send { background:#63b3ed; color:#0f1117; border-radius:99px; padding:11px 18px; font-size:13px; font-weight:600; }
+
+  /* mine / intel */
+  .pbadge { display:inline-block; font-size:10px; font-weight:700; background:linear-gradient(90deg,#f6e05e,#ed8936); color:#1a1a1a; padding:3px 10px; border-radius:99px; }
+  .lockcard { opacity:.72; }
+  .formin { background:rgba(255,255,255,.06); border-radius:10px; padding:12px; margin:8px 0; font-size:12px; color:rgba(255,255,255,.4); }
+  .btn { border-radius:10px; padding:12px; text-align:center; font-size:13px; font-weight:600; margin-top:6px; }
+  .btn.blue{ background:#63b3ed; color:#0f1117;}
+  .btn.purple{ background:rgba(159,122,234,.3); color:#b794f4;}
+  .btn.pro{ background:linear-gradient(90deg,#f6e05e,#ed8936); color:#1a1a1a;}
+  .btn.ghost{ background:rgba(99,179,237,.18); color:#63b3ed;}
+
+  .hint { text-align:center; font-size:12px; color:rgba(255,255,255,.35); margin-top:24px; line-height:1.7; }
+  .swipe { text-align:center; color:rgba(255,255,255,.3); font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>📉 Stock-Panic Tracker</h1>
+  <p>微信小程序 · 6 Tab · Moomoo 深色风 · 界面预览</p>
+  <div class="real-badge">● 数据为后端实测真实数据（2026-06-14 盘口）</div>
+</div>
+<div class="swipe">← 左右滑动查看全部 6 个界面 →</div>
+
+<div class="phones">
+
+  <!-- 1. 首页 -->
+  <div class="col">
+    <div class="col-label">🏠 首页 · 恐慌仪表盘</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>● ● ● 5G ▮</span></div>
+      <div class="navbar">恐慌追踪器</div>
+      <div class="screen">
+        <div class="gauge">
+          <div class="label">市场恐慌指数</div>
+          <div class="num">25</div>
+          <div class="lvl">冷静 · 市场情绪平稳</div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="twogauge">
+          <div class="mini"><div class="label">你的恐慌分</div><div class="v gold">--</div><div class="muted" style="font-size:9px">未登录</div></div>
+          <div class="mini"><div class="label">VIX</div><div class="v down">17.68</div><div class="down" style="font-size:9px">↓ -9.05%</div></div>
+        </div>
+        <div class="card">
+          <div class="label">分项构成</div>
+          <div class="comp"><span>VIX 波动率</span><span class="panic">26</span></div>
+          <div class="comp"><span>跌幅广度</span><span class="panic">25</span></div>
+          <div class="comp"><span>成交量异常</span><span class="panic">24</span></div>
+        </div>
+        <div class="briefing">
+          <div class="label gold">🤖 AI 今日简报</div>
+          <div class="t">恐慌指数处于"冷静"区间，市场情绪平稳。建议暂不因短期波动频繁交易，可趁个股价值回调时适度加仓优质标的，持仓无需恐慌调整。</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on"><span class="ic">🏠</span>首页</div>
+        <div class="tab"><span class="ic">📊</span>行情</div>
+        <div class="tab"><span class="ic">🔍</span>发现</div>
+        <div class="tab"><span class="ic">💎</span>情报</div>
+        <div class="tab"><span class="ic">🤖</span>AI</div>
+        <div class="tab"><span class="ic">👤</span>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 行情 -->
+  <div class="col">
+    <div class="col-label">📊 行情 · 真实美股</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>● ● ● 5G ▮</span></div>
+      <div class="navbar">行情</div>
+      <div class="screen">
+        <div class="label" style="margin:4px 0 10px">自选 · 美股科技/半导体/ETF</div>
+        <div class="qrow"><div><div class="qsym">AAPL</div><div class="qsub">苹果</div></div><div class="qright"><div class="qprice">291.13</div><div class="qpct up">-1.52%</div></div></div>
+        <div class="qrow"><div><div class="qsym">NVDA</div><div class="qsub">英伟达</div></div><div class="qright"><div class="qprice">205.19</div><div class="qpct down">+0.16%</div></div></div>
+        <div class="qrow"><div><div class="qsym">AMD</div><div class="qsub">超威</div></div><div class="qright"><div class="qprice">511.57</div><div class="qpct down">+4.73%</div></div></div>
+        <div class="qrow"><div><div class="qsym">TSM</div><div class="qsub">台积电</div></div><div class="qright"><div class="qprice">423.93</div><div class="qpct down">+0.68%</div></div></div>
+        <div class="qrow"><div><div class="qsym">MSFT</div><div class="qsub">微软</div></div><div class="qright"><div class="qprice">390.74</div><div class="qpct down">+0.10%</div></div></div>
+        <div class="qrow"><div><div class="qsym">GOOGL</div><div class="qsub">谷歌</div></div><div class="qright"><div class="qprice">359.68</div><div class="qpct down">+0.53%</div></div></div>
+        <div class="qrow"><div><div class="qsym">META</div><div class="qsub">Meta</div></div><div class="qright"><div class="qprice">566.98</div><div class="qpct up">-0.26%</div></div></div>
+        <div class="qrow"><div><div class="qsym">AVGO</div><div class="qsub">博通</div></div><div class="qright"><div class="qprice">382.07</div><div class="qpct up">-0.91%</div></div></div>
+        <div class="qrow"><div><div class="qsym">QQQ</div><div class="qsub">纳指ETF</div></div><div class="qright"><div class="qprice">721.34</div><div class="qpct down">+0.59%</div></div></div>
+        <div class="qrow"><div><div class="qsym">TQQQ</div><div class="qsub">3x纳指</div></div><div class="qright"><div class="qprice">77.52</div><div class="qpct down">+1.99%</div></div></div>
+        <div class="qrow"><div><div class="qsym">SOXL</div><div class="qsub">3x半导体</div></div><div class="qright"><div class="qprice">234.68</div><div class="qpct down">+4.77%</div></div></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><span class="ic">🏠</span>首页</div>
+        <div class="tab on"><span class="ic">📊</span>行情</div>
+        <div class="tab"><span class="ic">🔍</span>发现</div>
+        <div class="tab"><span class="ic">💎</span>情报</div>
+        <div class="tab"><span class="ic">🤖</span>AI</div>
+        <div class="tab"><span class="ic">👤</span>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 发现 -->
+  <div class="col">
+    <div class="col-label">🔍 发现 · 真实路透新闻</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>● ● ● 5G ▮</span></div>
+      <div class="navbar">发现</div>
+      <div class="screen">
+        <div class="label" style="margin:4px 0 10px">🐦 政要动态</div>
+        <div class="tweet">
+          <div class="h"><div class="av">🇺🇸</div><div><div class="nm">Donald Trump</div><div class="muted" style="font-size:10px">@realDonaldTrump · 接入 RapidAPI 后实时</div></div></div>
+          <div class="tx muted" style="font-style:italic">（政要推文需 RapidAPI Twitter 接入 · 二期）<br>AI 会自动解读每条发言可能影响的板块/方向</div>
+        </div>
+        <div class="label" style="margin:18px 0 8px">📰 重要资讯</div>
+        <div class="news"><div class="t">US, Iran inch closer to deal, timing remains unclear</div><div class="s">Reuters</div></div>
+        <div class="news"><div class="t">UK's Starmer, Trump discuss efforts to end Iran conflict</div><div class="s">Reuters</div></div>
+        <div class="news"><div class="t">Trump says Iran deal to be signed on Sunday</div><div class="s">Reuters</div></div>
+        <div class="news"><div class="t">Oil prices ease as Middle East tensions show signs of cooling</div><div class="s">Reuters</div></div>
+        <div class="news"><div class="t">Wall Street futures steady ahead of Fed decision</div><div class="s">Reuters</div></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><span class="ic">🏠</span>首页</div>
+        <div class="tab"><span class="ic">📊</span>行情</div>
+        <div class="tab on"><span class="ic">🔍</span>发现</div>
+        <div class="tab"><span class="ic">💎</span>情报</div>
+        <div class="tab"><span class="ic">🤖</span>AI</div>
+        <div class="tab"><span class="ic">👤</span>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 情报 -->
+  <div class="col">
+    <div class="col-label">💎 情报 · 付费墙</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>● ● ● 5G ▮</span></div>
+      <div class="navbar">情报中心</div>
+      <div class="screen">
+        <div class="card lockcard">
+          <div style="font-size:15px;font-weight:600">🏛️ 国会议员持仓追踪 <span class="pbadge">PRO</span></div>
+          <div class="muted" style="margin-top:8px;font-size:12px">议员交易披露 + AI 解读（二期上线）</div>
+        </div>
+        <div class="card lockcard">
+          <div style="font-size:15px;font-weight:600">💥 持仓压力测试 <span class="pbadge">PRO</span></div>
+          <div class="muted" style="margin-top:8px;font-size:12px">模拟 2008/2020 崩盘对你持仓的冲击（二期上线）</div>
+        </div>
+        <div class="card" style="border-color:rgba(236,201,75,.3)">
+          <div class="gold" style="font-size:16px;font-weight:700">解锁全部功能</div>
+          <div class="muted" style="margin:10px 0;font-size:12px">前 3 天免费 · 首月半价 · 之后标准价</div>
+          <div class="btn ghost">标准版 试用（¥19.9/月起）</div>
+          <div class="btn pro">Pro版 试用（¥39.9/月起）</div>
+        </div>
+        <div class="muted" style="font-size:11px;text-align:center;margin-top:8px">试用一次后再点 → "你已使用过免费试用"</div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><span class="ic">🏠</span>首页</div>
+        <div class="tab"><span class="ic">📊</span>行情</div>
+        <div class="tab"><span class="ic">🔍</span>发现</div>
+        <div class="tab on"><span class="ic">💎</span>情报</div>
+        <div class="tab"><span class="ic">🤖</span>AI</div>
+        <div class="tab"><span class="ic">👤</span>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. AI -->
+  <div class="col">
+    <div class="col-label">🤖 AI · 真实 DeepSeek</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>● ● ● 5G ▮</span></div>
+      <div class="navbar">AI 助手</div>
+      <div class="screen" style="display:flex;flex-direction:column">
+        <div style="flex:1">
+          <div class="msg u">现在 NVDA 能买吗？</div>
+          <div class="msg a">当前市场恐慌指数 25（冷静），NVDA 今日微涨 0.16%、波动温和。冷静区间不建议追高，可分批布局而非一次性重仓。注意本周 Fed 决议前的波动放大风险，仓位控制比择时更重要。</div>
+          <div class="msg u">我该止损吗？</div>
+          <div class="msg a">是否止损取决于你的持仓成本与风险承受度，而非市场短期情绪…（DeepSeek 流式逐字输出）</div>
+        </div>
+        <div class="inputbar">
+          <div class="in">问问 AI：现在该加仓吗？</div>
+          <div class="send">发送</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><span class="ic">🏠</span>首页</div>
+        <div class="tab"><span class="ic">📊</span>行情</div>
+        <div class="tab"><span class="ic">🔍</span>发现</div>
+        <div class="tab"><span class="ic">💎</span>情报</div>
+        <div class="tab on"><span class="ic">🤖</span>AI</div>
+        <div class="tab"><span class="ic">👤</span>我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 我的 -->
+  <div class="col">
+    <div class="col-label">👤 我的 · 持仓+个人恐慌</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>● ● ● 5G ▮</span></div>
+      <div class="navbar">我的</div>
+      <div class="screen">
+        <div class="gauge" style="background:linear-gradient(135deg,rgba(252,129,74,.18),rgba(252,129,74,.04))">
+          <div class="label">你的个人恐慌指数</div>
+          <div class="num" style="font-size:52px">63</div>
+          <div class="muted" style="font-size:11px;margin-top:4px">持仓 38 + 问卷 25</div>
+        </div>
+        <div class="card">
+          <div class="label">我的持仓</div>
+          <div class="comp"><span>NVDA · 100股 @420.50</span><span class="down">删除</span></div>
+          <div class="comp"><span>SOXL · 50股 @180.00</span><span class="down">删除</span></div>
+        </div>
+        <div class="card">
+          <div class="label">添加持仓</div>
+          <div class="formin">代码 如 NVDA</div>
+          <div class="formin">股数 / 成本价</div>
+          <div class="btn blue">添加</div>
+          <div class="btn purple">📷 上传券商截图识别</div>
+        </div>
+        <div class="card" style="text-align:center"><span class="gold">📋 填写情绪问卷 → 完善个人恐慌分</span></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><span class="ic">🏠</span>首页</div>
+        <div class="tab"><span class="ic">📊</span>行情</div>
+        <div class="tab"><span class="ic">🔍</span>发现</div>
+        <div class="tab"><span class="ic">💎</span>情报</div>
+        <div class="tab"><span class="ic">🤖</span>AI</div>
+        <div class="tab on"><span class="ic">👤</span>我的</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="hint">
+  ℹ️ 这是用真实后端数据 + 小程序实际配色(深色 #0f1117 · 红涨绿跌 · 恐慌橙 #fc8149 · PRO 金色)做的高保真预览。<br>
+  真机在微信开发者工具里渲染会与此基本一致，并带真实交互（流式对话、登录、增删持仓、试用）。
+</div>
+
+</body>
+</html>
